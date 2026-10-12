@@ -1,8 +1,8 @@
 "use client";
 
 import { LinkIcon, EnvelopeIcon } from "@heroicons/react/24/outline";
-import { tokenParser } from "../lib/utilities";
-import { token } from "../lib/slices/tokensSlice";
+import { tokenExpired, tokenParser } from "../lib/utilities";
+import { token, deleteTokens } from "../lib/slices/tokensSlice";
 import { useEffect } from "react";
 import { useAppDispatch, useAppSelector } from "../lib/hooks";
 import Link from "next/link";
@@ -22,6 +22,12 @@ export default function Magic() {
     async function checkCredentials(): Promise<void> {
       if (isLoggedIn) {
         router.push("/");
+        return;
+      }
+      if (accessToken && tokenExpired(accessToken)) {
+        dispatch(deleteTokens());
+        router.push(redirectRoute);
+        return;
       }
       if (
         !(accessToken && tokenParser(accessToken).hasOwnProperty("fingerprint"))

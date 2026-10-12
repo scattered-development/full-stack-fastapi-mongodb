@@ -2,8 +2,9 @@
 
 import { useAppDispatch, useAppSelector } from "../lib/hooks"
 import { login, loggedIn } from "../lib/slices/authSlice"
+import { deleteTokens } from "../lib/slices/tokensSlice"
 import { useRouter, useSearchParams } from "next/navigation"
-import { tokenIsTOTP, tokenParser } from "../lib/utilities"
+import { tokenExpired, tokenIsTOTP, tokenParser } from "../lib/utilities"
 import { Switch } from "@headlessui/react"
 import { Suspense, useEffect, useState } from "react"
 import {
@@ -139,6 +140,10 @@ function UnsuspendedPage() {
 
   useEffect(() => {
     if (isLoggedIn) return redirectTo(redirectAfterLogin);
+    if (accessToken && tokenExpired(accessToken)) {
+      dispatch(deleteTokens());
+      return;
+    }
     if (
       accessToken &&
       tokenIsTOTP(accessToken) &&

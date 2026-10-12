@@ -7,7 +7,7 @@ import { Suspense, useEffect } from "react"
 import { useAppDispatch, useAppSelector } from "./lib/hooks"
 import { loggedIn, magicLogin } from "./lib/slices/authSlice"
 import { tokenIsTOTP } from "./lib/utilities"
-import { token } from "./lib/slices/tokensSlice"
+import { store } from "./lib/store"
 const github = {
   name: "GitHub",
   href: "https://github.com/mongodb-labs/full-stack-fastapi-mongodb",
@@ -33,7 +33,6 @@ function UnsuspendedPage() {
 
   const dispatch = useAppDispatch();
 
-  const accessToken = useAppSelector((state) => token(state));
   const isLoggedIn = useAppSelector((state) => loggedIn(state));
 
   useEffect(() => {
@@ -47,7 +46,12 @@ function UnsuspendedPage() {
         });
         if (!isLoggedIn)
           await dispatch(magicLogin({ token: query.get("magic") as string }));
-        if (tokenIsTOTP(accessToken)) router.push(redirectTOTP);
+        // Read the token straight from the store rather than from a selector
+        // captured in this closure, which would still hold the pre-dispatch
+        // (empty) value from the render that scheduled this effect.
+        const freshAccessToken = store.getState().tokens.access_token;
+        if (freshAccessToken && tokenIsTOTP(freshAccessToken))
+          router.push(redirectTOTP);
         else router.push(redirectAfterLogin);
       }
     }

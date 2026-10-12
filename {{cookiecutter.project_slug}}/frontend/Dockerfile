@@ -15,6 +15,18 @@ RUN \
   else npm install && npm ci; \
   fi
 
+# Development image with hot reload (used only by docker-compose.override.yml)
+FROM deps AS dev
+WORKDIR /frontend
+EXPOSE 80
+# Re-sync node_modules against the bind-mounted package-lock.json on every
+# container start, rather than trusting the named volume's seeded-once content
+# (Docker only copies the image's node_modules into the volume the first time
+# it's created — rebuilding the image later never refreshes an existing volume).
+# Plain `npm install` (not `npm ci`) so this is a fast no-op when nothing
+# changed and only does real work when the lockfile did.
+CMD npm install && npm run dev -- -p 80 -H 0.0.0.0
+
 # Rebuild the source code only when needed
 FROM base AS builder
 WORKDIR /frontend

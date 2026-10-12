@@ -576,6 +576,19 @@ docker-auto-labels docker-stack.yml
 docker stack deploy -c docker-stack.yml --with-registry-auth "${STACK_NAME?Variable not set}"
 ```
 
+### Running in production without Docker Swarm
+
+If you don't want to use Docker Swarm and would rather just run `docker build`/`docker compose` directly on your server, you can — but always pass `-f docker-compose.yml` explicitly, the same way `scripts/build.sh`, `scripts/build-push.sh`, and `scripts/deploy.sh` already do:
+
+```bash
+docker compose -f docker-compose.yml build
+docker compose -f docker-compose.yml up -d
+```
+
+**Why this matters**: a bare `docker compose` command (no `-f` flag) automatically merges in `docker-compose.override.yml` if that file exists in the same directory — and it does, since it's a tracked file in this repo. That file is for local development only: it bind-mounts live source code into the `backend` and `frontend` containers and switches them to reload-on-change modes. If it gets merged into a production run, those bind mounts can shadow the production image's compiled output with raw, unbuilt source and crash the container, or at minimum leave a dev server (rather than the production build) publicly reachable. Explicitly passing `-f docker-compose.yml` skips that auto-merge entirely, regardless of whether `docker-compose.override.yml` happens to exist on that machine.
+
+`BACKEND_WITH_RELOAD`, `INSTALL_DEV`, and `FRONTEND_BUILD_TARGET` already default to production-safe values inside `docker-compose.yml` itself, so building from that file alone needs no extra configuration — these variables only matter if you want to deliberately override one of them for a one-off case, via `.env` or the shell environment.
+
 ### Continuous Integration / Continuous Delivery
 
 In order to run properly in Github, you need to provide a `secrets.DOCKERHUB_USERNAME` and `secrets.DOCKERHUB_PASSWORD` in your Github repository secrets. Read more [here](https://docs.github.com/en/actions/security-guides/using-secrets-in-github-actions) on how that is done.

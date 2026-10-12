@@ -73,7 +73,16 @@ services:
       - "3000:80"
     build:
       context: ./frontend
-      target: runner
+      target: ${FRONTEND_BUILD_TARGET-dev}
+    environment:
+      - NODE_ENV=development
+      - NEXT_TELEMETRY_DISABLED=1
+      - WATCHPACK_POLLING=true
+      - CHOKIDAR_USEPOLLING=true
+    volumes:
+      - ./frontend:/frontend
+      - frontend_node_modules:/frontend/node_modules
+      - frontend_next_cache:/frontend/.next
     labels:
       - traefik.enable=true
       - traefik.constraint-label-stack=${TRAEFIK_TAG?Variable not set}
@@ -81,7 +90,8 @@ services:
       - traefik.http.services.${STACK_NAME?Variable not set}-frontend.loadbalancer.server.port=80
 
 volumes:
-  node_modules:
+  frontend_node_modules:
+  frontend_next_cache:
 
 networks:
   traefik-public:
